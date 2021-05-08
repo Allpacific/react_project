@@ -34,6 +34,7 @@ body #root .app {
 .login header h1 {
   color: white;
   font-size: 30px;
+  margin-bottom: 0px;
 }
 .login section {
   width: 400px;

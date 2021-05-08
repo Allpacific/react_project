@@ -1,18 +1,51 @@
 import React, { Component } from 'react'
+import { Form, Input, Icon, Button, message } from 'antd';
+import {connect} from 'react-redux'
+import {Redirect} from 'react-router-dom'
 import './css/login.less'
-import logo from './imgs/logo.png'
-import { Form, Input, Icon, Button } from 'antd';
+import logo from '../../static/imgs/logo.png'
+import {createSaveUserInfoAction} from '../../redux/actions_creators/login_action'
+import {reqLogin} from '../../api'
+
 const {Item} = Form
 
+@connect(
+    state => ({isLogin: state.userInfo.isLogin}),
+    {
+        saveUserInfo: createSaveUserInfoAction
+    }
+)
+@Form.create()
 class Login extends Component {
 
     // 点击登录按钮的回调
     handleSubmit = (event) => {
         // 阻止默认事件--禁止form表单提交--通过ajax提交
         event.preventDefault();
-        this.props.form.validateFields((err, values) => {
-          if (!err) {
-            console.log('Received values of form: ', values);
+        this.props.form.validateFields(async (err, values) => {
+            //values的值是：{username: xxx, password: xxx} 
+            const {username, password} = values
+            if (!err) {
+                // reqLogin(username, password)
+                //     .then((result) => {
+                //         console.log(result.data);
+                //     })
+                //     .catch((reason) => {
+                //         console.log(reason);
+                //     })
+                let result = await reqLogin(username, password)
+                const {status, msg, data} = result
+                if(status === 0) {
+                    // 1.服务器返回的user信息，还有token交由redux管理
+                    this.props.saveUserInfo(data)
+                    // 2.跳转到admin页面
+                    this.props.history.replace('/admin')
+                }else {
+                    message.warning(msg, 1)
+                }
+                // console.log(result);
+           }else {
+            message.error('表单输入有误， 请检查！')
           }
         });
     }
@@ -41,8 +74,11 @@ class Login extends Component {
     render() {
 
         const {getFieldDecorator} = this.props.form
+        const {isLogin} = this.props
         // console.log(getFieldDecorator);
-
+        if(isLogin) {
+            return <Redirect to="/admin/home/" />
+        }
         return (
             <div className="login">
                 <header>
@@ -105,6 +141,8 @@ class Login extends Component {
     }
 }
 
+export default Login
+
 /*
     严重注意：
     1.暴露的根本不是我们定义的Login组件，而是我们加工（包装）的Login组件
@@ -112,7 +150,13 @@ class Login extends Component {
     3.我们暴露出去的不再是login，而是通过login生成的一个新组件
 */
 
-export default Form.create()(Login)
+// export default connect(
+//     state => ({isLogin: state.userInfo.isLogin}),
+//     {
+//         saveUserInfo: createSaveUserInfoAction
+//     }
+
+// )(Form.create()(Login))
 
 // 高阶函数: 如果一个demo函数接收一个函数作为参数，或者一个demo函数调用的返回值是一个函数------则demo为高阶函数
 
